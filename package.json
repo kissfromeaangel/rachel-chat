@@ -1,0 +1,39 @@
+{
+  "name": "rachel-chat",
+  "version": "5.0.0",
+  "description": "Rachel 5.0 - Desktop Chat Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "keywords": ["chat", "rachel", "ai"],
+  "author": "kissfromeaangel",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^latest",
+    "electron-builder": "^latest"
+  },
+  "build": {
+    "appId": "com.rachel.chat",
+    "productName": "Rachel 5.0",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icon-192.png",
+      "icon-512.png",
+      "manifest.json",
+      "sw.js"
+    ],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "mac": {
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    }
+  }
+}
