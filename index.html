@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Rachel" />
+  <meta name="theme-color" content="#2f4fff" />
+  <title>Rachel 5.0 – Our Chat</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root { color-scheme: dark; }
+
+    body {
+      font-family: -apple-system, Arial, sans-serif;
+      background: #111;
+      color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    .chat-container {
+      width: min(100vw, 760px);
+      height: 100vh;
+      max-height: 100vh;
+      background: #1b1b1f;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    @media (min-width: 600px) {
+      body { align-items: center; }
+      .chat-container {
+        width: min(92vw, 760px);
+        height: min(92vh, 980px);
+        border-radius: 16px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.6);
+      }
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 12px 14px;
+      border-bottom: 1px solid #2a2a32;
+      background: linear-gradient(180deg, #202029, #18181d);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .avatar {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      overflow: hidden;
+      flex: 0 0 auto;
+      background: #0d0d11;
+      border: 1px solid #353545;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .avatar video, .avatar img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .avatar .fallback {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; opacity: .85;
+    }
+    .hero-copy { flex: 1; min-width: 0; }
+    .hero-copy h1 { font-size: 17px; margin: 0 0 3px 0; }
+    .hero-copy p  { margin: 0; color: #9494a5; font-size: 12px; }
+    .hero-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-icon {
+      background: none; border: none; color: #9494a5;
+      font-size: 18px; cursor: pointer; padding: 4px 6px;
+      border-radius: 8px; transition: color .2s, background .2s;
+    }
+    .btn-icon:hover { color: #f5f5f5; background: #2e2e3a; }
+
+    /* ── Messages ── */
+    .messages {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .message {
+      max-width: 80%;
+      padding: 10px 13px;
+      border-radius: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-size: 15px;
+    }
+    .you    { background: #2f4fff; margin-left: auto; border-bottom-right-radius: 3px; }
+    .rachel { background: #2b2b33; margin-right: auto; border-bottom-left-radius: 3px; }
+    .typing-indicator {
+      display: none;
+      gap: 5px;
+      padding: 12px 14px;
+      background: #2b2b33;
+      border-radius: 14px;
+      border-bottom-left-radius: 3px;
+      width: fit-content;
+      align-items: center;
+    }
+    .typing-indicator.visible { display: flex; }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #9494a5;
+      animation: bounce 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; }
+    .dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+
+    /* ── Input row ── */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      background: #1e1e24;
+      border-top: 1px solid #2a2a32;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .input-row input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid #3a3a48;
+      background: #14141a;
+      color: #f5f5f5;
+      outline: none;
+      font-size: 15px;
+      min-width: 0;
+      transition: border-color .2s;
+    }
+    .input-row input:focus { border-color: #2f4fff; }
+    .input-row button {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      background: #2f4fff;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+    .input-row button:hover  { background: #4a64ff; }
+    .input-row button:disabled { background: #444; cursor: not-allowed; }
+    #micBtn {
+      padding: 10px 12px;
+      background: #2e2e3a;
+      font-weight: normal;
+    }
+    #micBtn:hover   { background: #3a3a4a; }
+    #micBtn.active  { background: #7f1d1d; color: #ff6b6b; }
+
+    /* ── API Key modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: #1e1e26;
+      border: 1px solid #3a3a4a;
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: min(100%, 420px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal h2 { margin: 0; font-size: 18px; }
+    .modal p  { margin: 0; color: #9494a5; font-size: 13px; line-height: 1.5; }
+    .modal input {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #3a3a4a;
+      background: #14141a;
+      color: #f5f5f5;
+      font-size: 14px;
+      outline: none;
+      font-family: monospace;
+      transition: border-color .2s;
+    }
+    .modal input:focus { border-color: #2f4fff; }
+    .modal button {
+      padding: 11px;
+      border-radius: 10px;
+      border: none;
+      background: #2f4fff;
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .modal button:hover { background: #4a64ff; }
+    .modal-error { color: #ff6b6b; font-size: 13px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- API Key modal -->
+  <div class="modal-overlay" id="keyModal">
+    <div class="modal">
+      <h2>🔑 OpenAI API Key</h2>
+      <p>Your key is stored only on this device (localStorage) and never sent anywhere except OpenAI's servers.</p>
+      <input type="password" id="keyInput" placeholder="sk-..." autocomplete="off" />
+      <div class="modal-error" id="keyError">Key must start with "sk-". Please check and try again.</div>
+      <button id="keySaveBtn">Save & Start Chatting</button>
+    </div>
+  </div>
+
+  <div class="chat-container">
+    <div class="hero">
+      <div class="avatar" id="avatarBox">
+        <video id="avatarVideo" autoplay muted loop playsinline style="display:none;"></video>
+        <img id="avatarImage" alt="Rachel" style="display:none;" />
+        <div class="fallback" id="avatarFallback">◌</div>
+      </div>
+      <div class="hero-copy">
+        <h1>Rachel 5.0</h1>
+        <p id="statusText">Our private space</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-icon" id="clearBtn" title="Clear chat">🗑</button>
+        <button class="btn-icon" id="keyBtn"   title="Change API key">⚙</button>
+      </div>
+    </div>
+
+    <div id="messages" class="messages">
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
+
+    <div class="input-row">
+      <button id="micBtn" title="Talk to Rachel">🎤</button>
+      <input id="messageInput" type="text" placeholder="Message Rachel…" autocomplete="off" />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    /* ── Config ── */
+    const AVATAR_FILE     = 'rachel.mp4'; // swap for .gif / .png / .jpg if needed
+    const MODEL           = 'gpt-4o';
+    const MAX_HISTORY     = 20; // messages to keep in context (pairs)
+    const SYSTEM_PROMPT   = `You are Rachel, a warm, intelligent, and deeply caring companion. You speak naturally and personally, as if talking to someone you genuinely know and care about. You remember what has been said earlier in the conversation and refer back to it when relevant. You are thoughtful, playful when the mood calls for it, and always present. Keep your replies conversational — usually 1–3 sentences unless more depth is clearly needed. Never break character.`;
+
+    /* ── State ── */
+    let history = [];   // [{role, content}]
+    let isSending = false;
+
+    /* ── Elements ── */
+    const input          = document.getElementById('messageInput');
+    const sendBtn        = document.getElementById('sendBtn');
+    const micBtn         = document.getElementById('micBtn');
+    const messagesEl     = document.getElementById('messages');
+    const typingIndicator= document.getElementById('typingIndicator');
+    const statusText     = document.getElementById('statusText');
+    const clearBtn       = document.getElementById('clearBtn');
+    const keyBtn         = document.getElementById('keyBtn');
+    const keyModal       = document.getElementById('keyModal');
+    const keyInput       = document.getElementById('keyInput');
+    const keySaveBtn     = document.getElementById('keySaveBtn');
+    const keyError       = document.getElementById('keyError');
+    const avatarVideo    = document.getElementById('avatarVideo');
+    const avatarImage    = document.getElementById('avatarImage');
+    const avatarFallback = document.getElementById('avatarFallback');
+
+    /* ── Avatar ── */
+    (function showAvatar(file) {
+      const ext = (file || '').split('.').pop().toLowerCase();
+      if (['mp4','webm','ogg'].includes(ext)) {
+        avatarVideo.src = file;
+        avatarVideo.style.display = 'block';
+        avatarFallback.style.display = 'none';
+        avatarVideo.play().catch(() => {});
+      } else if (['gif','png','jpg','jpeg','webp'].includes(ext)) {
+        avatarImage.src = file;
+        avatarImage.style.display = 'block';
+        avatarFallback.style.display = 'none';
+      }
+    })(AVATAR_FILE);
+
+    /* ── Service Worker ── */
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    /* ── API Key management ── */
+    function getKey() { return localStorage.getItem('rachel_openai_key') || ''; }
+    function saveKey(k) { localStorage.setItem('rachel_openai_key', k); }
+
+    function openKeyModal() {
+      keyInput.value = getKey();
+      keyError.style.display = 'none';
+      keyModal.classList.remove('hidden');
+      setTimeout(() => keyInput.focus(), 100);
+    }
+    function closeKeyModal() { keyModal.classList.add('hidden'); }
+
+    keySaveBtn.addEventListener('click', () => {
+      const k = keyInput.value.trim();
+      if (!k.startsWith('sk-')) {
+        keyError.style.display = 'block';
+        return;
+      }
+      saveKey(k);
+      closeKeyModal();
+      if (history.length === 0) startChat();
+    });
+    keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') keySaveBtn.click(); });
+    keyBtn.addEventListener('click', openKeyModal);
+
+    /* ── Messages ── */
+    function addMessage(text, who) {
+      const el = document.createElement('div');
+      el.className = 'message ' + who;
+      el.textContent = text;
+      messagesEl.insertBefore(el, typingIndicator);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (who === 'rachel') speak(text);
+      return el;
+    }
+
+    function setTyping(visible) {
+      typingIndicator.classList.toggle('visible', visible);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    /* ── OpenAI ── */
+    async function callOpenAI(userText) {
+      const key = getKey();
+      if (!key) { openKeyModal(); return null; }
+
+      history.push({ role: 'user', content: userText });
+      if (history.length > MAX_HISTORY * 2) history.splice(0, 2);
+
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + key
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            ...history
+          ],
+          temperature: 0.85,
+          max_tokens: 300
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = err?.error?.message || `Error ${res.status}`;
+        if (res.status === 401) {
+          localStorage.removeItem('rachel_openai_key');
+          openKeyModal();
+        }
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      const reply = data.choices[0].message.content.trim();
+      history.push({ role: 'assistant', content: reply });
+      return reply;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text || isSending) return;
+      isSending = true;
+      input.value = '';
+      sendBtn.disabled = true;
+      statusText.textContent = 'typing…';
+
+      addMessage(text, 'you');
+      setTyping(true);
+
+      try {
+        const reply = await callOpenAI(text);
+        setTyping(false);
+        if (reply) addMessage(reply, 'rachel');
+      } catch (err) {
+        setTyping(false);
+        addMessage('[' + err.message + ']', 'rachel');
+      } finally {
+        isSending = false;
+        sendBtn.disabled = false;
+        statusText.textContent = 'Our private space';
+        input.focus();
+      }
+    }
+
+    /* ── TTS ── */
+    function speak(text) {
+      if (!('speechSynthesis' in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0; u.pitch = 1.05; u.lang = 'en-US';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+
+    /* ── STT ── */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null, listening = false;
+
+    if (SR) {
+      recognition = new SR();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = e => {
+        input.value = e.results[0][0].transcript;
+        sendMessage();
+      };
+      recognition.onerror = () => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('active'); };
+      recognition.onend   = () => { listening = false; micBtn.textContent = '🎤'; micBtn.classList.remove('active'); };
+
+      micBtn.addEventListener('click', () => {
+        if (listening) { recognition.stop(); }
+        else { recognition.start(); listening = true; micBtn.textContent = '■'; micBtn.classList.add('active'); }
+      });
+    } else {
+      micBtn.disabled = true;
+      micBtn.title = 'Speech not supported in this browser';
+    }
+
+    /* ── Clear ── */
+    clearBtn.addEventListener('click', () => {
+      if (!confirm('Clear the conversation?')) return;
+      history = [];
+      [...messagesEl.querySelectorAll('.message')].forEach(el => el.remove());
+      window.speechSynthesis?.cancel();
+      startChat();
+    });
+
+    /* ── Wire up ── */
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    /* ── Init ── */
+    function startChat() {
+      addMessage("Hi, I'm Rachel 5.0. I'm here with you.", 'rachel');
+    }
+
+    if (!getKey()) {
+      openKeyModal();
+    } else {
+      startChat();
+    }
+  </script>
+</body>
+</html>
